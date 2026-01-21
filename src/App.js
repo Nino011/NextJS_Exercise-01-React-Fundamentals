@@ -2,7 +2,6 @@ import React from "react";
 import axios from "axios";
 import PlayerCards from "./PlayerCards";
 
-
 class App extends React.Component {
   constructor(props) {
     super(props);
@@ -23,19 +22,19 @@ class App extends React.Component {
       // Disable deal button before fetching
       this.setState({ buttonDisabled: true });
 
-      // Create and shuffle new deck
+      // Create and shuffle a new deck
       const response = await axios.get(
         "https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1"
       );
 
-      // Store deck id and re-enable button
+      // Store deck ID and remaining count, re-enable button
       this.setState({
         deckId: response.data.deck_id,
         remaining: response.data.remaining,
         buttonDisabled: false
       });
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error("Error creating deck:", err);
     }
   }
 
@@ -56,28 +55,30 @@ class App extends React.Component {
       const card = response.data.cards[0];
       const newRemaining = response.data.remaining;
 
+      // Assign card to current player
       this.setState((prevState) => {
-        let nextPlayer = prevState.currentPlayer + 1;
-        if (nextPlayer > 3) nextPlayer = 1;
-
-        const newState = {
-          currentPlayer: nextPlayer,
-          remaining: newRemaining,
-          buttonDisabled: newRemaining === 0
+        const updatedState = {
+          remaining: newRemaining
         };
 
-        if (prevState.currentPlayer === 1) {
-          newState.player1 = [...prevState.player1, card];
-        } else if (prevState.currentPlayer === 2) {
-          newState.player2 = [...prevState.player2, card];
+        if (currentPlayer === 1) {
+          updatedState.player1 = [...prevState.player1, card];
+          updatedState.currentPlayer = 2;
+        } else if (currentPlayer === 2) {
+          updatedState.player2 = [...prevState.player2, card];
+          updatedState.currentPlayer = 3;
         } else {
-          newState.player3 = [...prevState.player3, card];
+          updatedState.player3 = [...prevState.player3, card];
+          updatedState.currentPlayer = 1;
         }
 
-        return newState;
+        // Re-enable button only if cards remain
+        updatedState.buttonDisabled = newRemaining === 0;
+
+        return updatedState;
       });
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error("Error dealing card:", err);
       this.setState({ buttonDisabled: false });
     }
   };
@@ -91,14 +92,20 @@ class App extends React.Component {
           Deal!
         </button>
 
-        <h3>Player 1 Cards</h3>
-        <PlayerCards cards={player1} />
+        <div>
+          <h3>Player 1 Cards:</h3>
+          <PlayerCards cards={player1} />
+        </div>
 
-        <h3>Player 2 Cards</h3>
-        <PlayerCards cards={player2} />
+        <div>
+          <h3>Player 2 Cards:</h3>
+          <PlayerCards cards={player2} />
+        </div>
 
-        <h3>Player 3 Cards</h3>
-        <PlayerCards cards={player3} />
+        <div>
+          <h3>Player 3 Cards:</h3>
+          <PlayerCards cards={player3} />
+        </div>
       </div>
     );
   }
